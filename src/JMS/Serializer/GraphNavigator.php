@@ -23,6 +23,7 @@ use JMS\Serializer\EventDispatcher\EventDispatcherInterface;
 use JMS\Serializer\EventDispatcher\ObjectEvent;
 use JMS\Serializer\EventDispatcher\PreDeserializeEvent;
 use JMS\Serializer\EventDispatcher\PreSerializeEvent;
+use JMS\Serializer\Exception\ExcludedNodeException;
 use JMS\Serializer\Exception\ExpressionLanguageRequiredException;
 use JMS\Serializer\Exception\InvalidArgumentException;
 use JMS\Serializer\Exception\RuntimeException;
@@ -99,6 +100,9 @@ final class GraphNavigator
      * @param mixed $data the data depends on the direction, and type of visitor
      * @param null|array $type array has the format ["name" => string, "params" => array]
      * @param Context $context
+     *
+     * @throws ExcludedNodeException If the visited object was flagged to be excluded.
+     *
      * @return mixed the return value depends on the direction, and type of visitor
      */
     public function accept($data, array $type = null, Context $context)
@@ -222,7 +226,7 @@ final class GraphNavigator
                 if (null !== $exclusionStrategy && $exclusionStrategy->shouldSkipClass($metadata, $context)) {
                     $this->leaveScope($context, $data);
 
-                    return null;
+                    throw new ExcludedNodeException();
                 }
 
                 $context->pushClassMetadata($metadata);
