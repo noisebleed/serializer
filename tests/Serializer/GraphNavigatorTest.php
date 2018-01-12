@@ -86,6 +86,34 @@ class GraphNavigatorTest extends \PHPUnit_Framework_TestCase
         $this->navigator->accept($object, null, $this->context);
     }
 
+    /**
+     * @expectedException JMS\Serializer\Exception\ExcludedNodeException
+     */
+    public function testExcludedNodesAreNotAccepted()
+    {
+        $object = new SerializableClass;
+
+        $exclusionStrategy = $this->getMockBuilder('JMS\Serializer\Exclusion\ExclusionStrategyInterface')->getMock();
+        $exclusionStrategy->expects($this->once())
+            ->method('shouldSkipClass')
+            ->will($this->returnValue(true));
+
+        $this->context->expects($this->once())
+            ->method('getExclusionStrategy')
+            ->will($this->returnValue($exclusionStrategy));
+
+        $this->context->expects($this->any())
+            ->method('getDirection')
+            ->will($this->returnValue(GraphNavigator::DIRECTION_SERIALIZATION));
+
+        $this->context->expects($this->any())
+            ->method('getVisitor')
+            ->will($this->returnValue($this->getMockBuilder('JMS\Serializer\VisitorInterface')->getMock()));
+
+        $this->navigator = new GraphNavigator($this->metadataFactory, $this->handlerRegistry, $this->objectConstructor, $this->dispatcher);
+        $this->navigator->accept($object, null, $this->context);
+    }
+
     public function testNavigatorPassesNullOnDeserialization()
     {
         $class = __NAMESPACE__ . '\SerializableClass';

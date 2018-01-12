@@ -18,6 +18,7 @@
 
 namespace JMS\Serializer;
 
+use JMS\Serializer\Exception\ExcludedNodeException;
 use JMS\Serializer\Exception\InvalidArgumentException;
 use JMS\Serializer\Metadata\ClassMetadata;
 use JMS\Serializer\Metadata\PropertyMetadata;
@@ -26,7 +27,11 @@ class JsonSerializationVisitor extends GenericSerializationVisitor
 {
     private $options = 0;
 
+    /**
+     * @var GraphNavigator
+     */
     private $navigator;
+
     private $root;
     private $dataStack;
     private $data;
@@ -109,7 +114,11 @@ class JsonSerializationVisitor extends GenericSerializationVisitor
         $isList = isset($type['params'][0]) && !isset($type['params'][1]);
 
         foreach ($data as $k => $v) {
-            $v = $this->navigator->accept($v, $this->getElementType($type), $context);
+            try {
+                $v = $this->navigator->accept($v, $this->getElementType($type), $context);
+            } catch (ExcludedNodeException $e) {
+                continue;
+            }
 
             if (null === $v && $context->shouldSerializeNull() !== true) {
                 continue;
@@ -157,7 +166,12 @@ class JsonSerializationVisitor extends GenericSerializationVisitor
     {
         $v = $this->accessor->getValue($data, $metadata);
 
-        $v = $this->navigator->accept($v, $metadata->type, $context);
+        try {
+            $v = $this->navigator->accept($v, $metadata->type, $context);
+        } catch (ExcludedNodeException $e) {
+            return;
+        }
+
         if ((null === $v && $context->shouldSerializeNull() !== true)
             || (true === $metadata->skipWhenEmpty && ($v instanceof \ArrayObject || is_array($v)) && 0 === count($v))
         ) {

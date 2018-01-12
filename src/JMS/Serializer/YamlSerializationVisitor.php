@@ -19,6 +19,7 @@
 namespace JMS\Serializer;
 
 use JMS\Serializer\Accessor\AccessorStrategyInterface;
+use JMS\Serializer\Exception\ExcludedNodeException;
 use JMS\Serializer\Metadata\ClassMetadata;
 use JMS\Serializer\Metadata\PropertyMetadata;
 use JMS\Serializer\Naming\PropertyNamingStrategyInterface;
@@ -35,7 +36,11 @@ class YamlSerializationVisitor extends AbstractVisitor
 {
     public $writer;
 
+    /**
+     * @var GraphNavigator
+     */
     private $navigator;
+
     private $stack;
     private $metadataStack;
     private $currentMetadata;
@@ -177,7 +182,13 @@ class YamlSerializationVisitor extends AbstractVisitor
 
         $count = $this->writer->changeCount;
 
-        if (null !== $v = $this->navigator->accept($v, $metadata->type, $context)) {
+        try {
+            $v = $this->navigator->accept($v, $metadata->type, $context);
+        } catch (ExcludedNodeException $e) {
+            $v = null;
+        }
+
+        if (null !== $v) {
             $this->writer
                 ->rtrim(false)
                 ->writeln(' ' . $v);

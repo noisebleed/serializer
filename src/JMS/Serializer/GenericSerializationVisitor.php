@@ -18,6 +18,7 @@
 
 namespace JMS\Serializer;
 
+use JMS\Serializer\Exception\ExcludedNodeException;
 use JMS\Serializer\Exception\InvalidArgumentException;
 use JMS\Serializer\Metadata\ClassMetadata;
 use JMS\Serializer\Metadata\PropertyMetadata;
@@ -91,6 +92,8 @@ abstract class GenericSerializationVisitor extends AbstractVisitor
     /**
      * @param array $data
      * @param array $type
+     *
+     * @return array|\ArrayObject
      */
     public function visitArray($data, array $type, Context $context)
     {
@@ -108,7 +111,11 @@ abstract class GenericSerializationVisitor extends AbstractVisitor
         $isList = isset($type['params'][0]) && !isset($type['params'][1]);
 
         foreach ($data as $k => $v) {
-            $v = $this->navigator->accept($v, $this->getElementType($type), $context);
+            try {
+                $v = $this->navigator->accept($v, $this->getElementType($type), $context);
+            } catch (ExcludedNodeException $e) {
+                continue;
+            }
 
             if (null === $v && $context->shouldSerializeNull() !== true) {
                 continue;
